@@ -5,12 +5,18 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon -r dotenv/config  src/index.js"
   },
   "author": "Prince kumar",
   "license": "ISC",
   "devDependencies": {
     "nodemon": "^3.1.4",
     "prettier": "^3.3.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongodb": "^6.8.0",
+    "mongoose": "^8.5.3"
   }
 }
