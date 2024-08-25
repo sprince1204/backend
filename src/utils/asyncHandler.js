@@ -1,6 +1,6 @@
 // two types of async handler 1. try and catch and other is promise type
 const asyncHandler = (requestHandler)=>{
-    (req, res, next)=>{
+    return (req, res, next)=>{
         Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err))
     }
 }
