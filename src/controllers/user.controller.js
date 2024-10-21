@@ -3,6 +3,7 @@ import {ApiError} from "../utils/ApiError.js"
 import {User} from "../models/user.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
+import jwt from "jsonwebtoken"
 
 const generateAccessAndRefreshToken = async(userId) => {
     try {
@@ -134,6 +135,12 @@ const loginUser = asyncHandler(async (req, res)=>{
 
     
 })
+//take input from frontend(email and password)
+// validatae with the data from the server 
+//if present(
+// chck password then give access and refresh token
+//send cookies)
+//if not present then return invalid crdiential
 
 const logoutUser = asyncHandler(async(req, res) =>{
     User.findByIdAndUpdate(
@@ -158,14 +165,55 @@ const logoutUser = asyncHandler(async(req, res) =>{
     .json(new ApiResponse(200, {}, "User logged out"))
 
 })
-//take input from frontend(email and password)
-// validatae with the data from the server 
-//if present(
-// chck password then give access and refresh token
-//send cookies)
-//if not present then return invalid crdiential
+
+const refreshAccessToken = asyncHandler(async(req, res) =>{
+    const incomingRefreshToken = req.cookie.refreshToken || req.body.refreshToken
+    if(!incomingRefreshToken){
+        throw new ApiError(401, "unathorised request")
+    }
+    try {
+        const decordedToken = jwt.verify(
+            incomingRefreshToken,
+            process.env.REFRESH_TOKEN_SECRET
+        )
+        const user = await User.findById(decordedToken?._id)
+    
+        if(!user){
+            throw new ApiError(401, "Invalid refresh token")
+            
+        }
+        if(incomingRefreshToken !== user?.refreshToken){
+            throw new ApiError(401,"refresh Token is expired or used")
+        }
+    
+        const options = {
+            httpOnly: true,
+            secure: true
+        }
+        const {accessToken, newRefreshToken} = await generateAccessAndRefreshToken(user._id)
+    
+        return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", newRefreshToken, options)
+        .json(
+            new ApiResponse(
+                200, 
+                {
+                    accessToken, refreshToken: newRefreshToken
+                },
+                "Access token refreshed"
+            )
+        )
+    } catch (error) {
+        throw new ApiError(401, error?.message || "invalid refresh token")
+    }
+
+
+})
 
 export {registerUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    refreshAccessToken
 }
